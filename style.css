@@ -1,0 +1,11 @@
+#a1111minipaint_iframe {
+    display: block;
+    width: 100%;
+    height: calc(90vh);
+    min-height: 750px;
+}
+
+/* Workaround for ashen-sensored/stable-diffusion-webui-two-shot */
+#a1111minipaint_iframe .output-html {
+    display: block;
+}
