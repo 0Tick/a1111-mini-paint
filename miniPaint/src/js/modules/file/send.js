@@ -207,7 +207,7 @@ class File_send_class {
 				{ name: "img2img", titel: "Type", values: ["Image2Image Init Image", "Image2Image Inpaint Image"] },
 			],
 			on_finish: function (params) {
-				_this.sendImageCanvasEditor(params.txt2img === "Image2Image Init Image" ? "img2img_img2img" : "img2img_inpaint")
+				_this.sendImageCanvasEditor(params.img2img === "Image2Image Init Image" ? "img2img_img2img" : "img2img_inpaint")
 			}
 		};
 		this.POP.show(settings);
@@ -241,8 +241,7 @@ class File_send_class {
 			var height = img.naturalHeight
 			var opener = new File_open_class()
 			Array.from(window.parent.gradioApp().querySelector('#tabs').querySelectorAll('button')).find(button => button.textContent === 'Mini Paint ').click();
-			var canv = document.createElement("canvas");	
-			console.log(img, width, height)
+			var canv = document.createElement("canvas");
 			canv.width = width;
 			canv.height = height;
 			var ctx = canv.getContext("2d");
