@@ -323,9 +323,11 @@ class Selection_class extends Base_tools_class {
 		let actions = [
 			new app.Actions.Reset_selection_action(this.selection)
 		];
-		delete config.layer.link_canvas;
-		this.reset_tmp_canvas();
-		return actions;
+		try {delete config.layer.link_canvas;}
+		finally{
+			this.reset_tmp_canvas();
+			return actions;
+		}
 	}
 
 	clear_selection() {

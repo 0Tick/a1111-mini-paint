@@ -31,19 +31,7 @@ class File_send_class {
 		window.parent.a1111minipaint.createSendButton = this.createSendToMiniPaintButton
 	}
 
-	set_events() {
-		window.parent.a1111minipaint.recieveImage
-		document.addEventListener('keydown', (event) => {
-			var code = event.key.toLowerCase();
-			if (this.Helper.is_input(event.target))
-				return;
-
-			else if (code == "e" && event.shiftKey) {
-				this.sendImageGeneral();
-				event.preventDefault();
-			}
-		}, false);
-	}
+	
 
 	dataURLtoFile(dataurl, filename) {
 		var arr = dataurl.split(','),
@@ -225,13 +213,20 @@ class File_send_class {
 	}
 
 	createSendToMiniPaintButton(queryId, gallery) {
-		const existingButton = window.parent.gradioApp().querySelector(`#${queryId} button`);
-		const newButton = existingButton.cloneNode(true);
-		newButton.id = `${queryId}_open_in_minipaint`;
-		newButton.textContent = "Send to miniPaint";
-		var t = new File_send_class()
-		newButton.addEventListener("click", () => t.recieveImage(gallery));
-		window.parent.gradioApp().querySelector(`#${queryId}`).appendChild(newButton);
+		var existingButton = window.parent.gradioApp().querySelector(`#${queryId} button`);
+		const FSC = new File_send_class();
+		const addButton = () => {FSC.recieveImage(gallery)}
+		if (window.parent.gradioApp().querySelector(`#${queryId}_open_in_minipaint`) == null){
+			const newButton = existingButton.cloneNode(true);
+			newButton.id = `${queryId}_open_in_minipaint`;
+			newButton.textContent = "Send to miniPaint";
+			newButton.addEventListener("click", addButton);
+			window.parent.gradioApp().querySelector(`#${queryId}`).appendChild(newButton);
+		}
+		else {
+			existingButton = window.parent.gradioApp().querySelector(`#${queryId}_open_in_minipaint`);
+			existingButton.addEventListener("click", addButton);
+		}
 	}
 
 	recieveImage(gallery) {
