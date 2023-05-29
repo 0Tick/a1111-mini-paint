@@ -1,5 +1,10 @@
 # AUTOMATIC1111 WebUI [miniPaint](https://github.com/viliusle/miniPaint) extension
 
+## Installation
+
+This extension is listed in the official extension index an can be installed easily:  
+Extensions -> Available -> Click `Load from` -> Search for `miniPaint` and press `Install`
+
 ## About this extension
 
 This extension provides a integrated version of the [miniPaint](https://github.com/viliusle/miniPaint) image editor.  
