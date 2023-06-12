@@ -34,6 +34,7 @@ self.addEventListener('install', function(e) {
 				'./images/icons/magic_erase.svg',
 				'./images/icons/media.svg',
 				'./images/icons/menu.svg',
+				'./images/icons/pan.svg',
 				'./images/icons/pencil.svg',
 				'./images/icons/pick_color.svg',
 				'./images/icons/refresh.svg',

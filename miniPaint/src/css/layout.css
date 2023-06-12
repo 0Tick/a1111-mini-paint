@@ -302,6 +302,7 @@ body .sp-preview{
 /*
 IMPORTANT: any new icon should also must be added on /service-worker.js + its version should be updated - FEATURE DISABLED
  */
+.sidebar_left .pan:after{ background-image: url('images/icons/pan.svg'); }
 .sidebar_left .select:after{ background-image: url('images/icons/select.svg'); }
 .sidebar_left .selection:after{ background-image: url('images/icons/selection.svg'); }
 .sidebar_left .brush:after{ background-image: url('images/icons/brush.svg'); }

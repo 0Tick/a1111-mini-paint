@@ -17,13 +17,15 @@ export class Reset_selection_action extends Base_action {
 
 	async do() {
 		super.do();
-		this.settings_reference = app.Layers.Base_selection.find_settings();
-		this.old_settings_data = JSON.parse(JSON.stringify(this.settings_reference.data));
-		this.settings_reference.data = {
-			x: null,
-			y: null,
-			width: null,
-			height: null
+		if (app.Layers.Base_selection.find_settings != undefined) {
+			this.settings_reference = app.Layers.Base_selection.find_settings();
+			this.old_settings_data = JSON.parse(JSON.stringify(this.settings_reference.data));
+			this.settings_reference.data = {
+				x: null,
+				y: null,
+				width: null,
+				height: null
+			}
 		}
 		if (this.mirror_selection_settings) {
 			this.mirror_selection_settings.x = null;
@@ -35,23 +37,23 @@ export class Reset_selection_action extends Base_action {
 	}
 
 	async undo() {
-		super.undo();
-		if (this.old_settings_data) {
-			for (let prop of ['x', 'y', 'width', 'height']) {
-				this.settings_reference.data[prop] = this.old_settings_data[prop];
-				if (this.mirror_selection_settings) {
-					this.mirror_selection_settings[prop] = this.old_settings_data[prop];
-				}
+	super.undo();
+	if (this.old_settings_data) {
+		for (let prop of ['x', 'y', 'width', 'height']) {
+			this.settings_reference.data[prop] = this.old_settings_data[prop];
+			if (this.mirror_selection_settings) {
+				this.mirror_selection_settings[prop] = this.old_settings_data[prop];
 			}
 		}
-		this.settings_reference = null;
-		this.old_settings_data = null;
-		config.need_render = true;
 	}
+	this.settings_reference = null;
+	this.old_settings_data = null;
+	config.need_render = true;
+}
 
-	free() {
-		this.settings_reference = null;
-		this.old_settings_data = null;
-		this.mirror_selection_settings = null;
-	}
+free() {
+	this.settings_reference = null;
+	this.old_settings_data = null;
+	this.mirror_selection_settings = null;
+}
 }

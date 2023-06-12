@@ -93,6 +93,11 @@ config.TOOLS = [
 		on_leave: 'on_leave',
 	},
 	{
+		name: 'pan',
+		title: 'Pan around the canvas',
+		attributes: {}
+	},
+	{
 		name: 'brush',
 		attributes: {
 			size: 4,
