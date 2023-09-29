@@ -44,7 +44,7 @@ def on_ui_tabs():
 
 def create_ui():
     try:
-        cn_max: int = opts.control_net_max_models_num
+        cn_max: int = opts.data.get("control_net_unit_count", 3)
     except (ImportError, AttributeError):
         cn_max = 0
     config = {"config": get_asset_url(write_config_file()) or ""}
@@ -55,7 +55,6 @@ def create_ui():
             <iframe id="a1111minipaint_iframe" src="{html.escape(html_url)}" onload = "a1111minipaint.onload()"></iframe>
             """
         )
-        gr.HTML("""<script>setTimeout(() => {a1111minipaint.createSendButton("image_buttons_txt2img", txt2img_gallery);a1111minipaint.createSendButton("image_buttons_img2img", img2img_gallery);a1111minipaint.createSendButton("image_buttons_extras", extras_gallery);}, 200)""")
         gr.Markdown("Original: [miniPaint](https://github.com/viliusle/miniPaint)")
         gr.Text(str(cn_max), visible=False, elem_id="a1111minipaint_controlnet_max")
 

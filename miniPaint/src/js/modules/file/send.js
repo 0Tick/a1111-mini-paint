@@ -159,7 +159,7 @@ class File_send_class {
 				observer.observe(element, { childList: true, subtree: true });
 			}
 		} else {
-			this.updateGradioImage(imageElems[Number(index)], dt);
+			this.updateGradioImage(imageElems[Number(index*2)], dt);
 		}
 
 	};
