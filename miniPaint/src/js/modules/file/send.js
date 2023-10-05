@@ -219,9 +219,10 @@ class File_send_class {
 		if (window.parent.gradioApp().querySelector(`#${queryId}_open_in_minipaint`) == null){
 			const newButton = existingButton.cloneNode(true);
 			newButton.id = `${queryId}_open_in_minipaint`;
-			newButton.textContent = "Send to miniPaint";
+			newButton.textContent = "✏️";
+			newButton.title= "Send image to miniPaint tab.";
 			newButton.addEventListener("click", addButton);
-			window.parent.gradioApp().querySelector(`#${queryId}`).appendChild(newButton);
+			window.parent.gradioApp().querySelector(`#${queryId} .form`).appendChild(newButton);
 		}
 		else {
 			existingButton = window.parent.gradioApp().querySelector(`#${queryId}_open_in_minipaint`);
