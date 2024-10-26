@@ -8,6 +8,7 @@ import File_open_class from './open.js';
 import Helper_class from './../../libs/helpers.js';
 
 var instance = null;
+let isForge = false
 
 /** 
  * manages sending files to other tabs
@@ -29,9 +30,10 @@ class File_send_class {
 		this.Helper = new Helper_class();
 		window.parent.a1111minipaint.recieve = this.recieveImage
 		window.parent.a1111minipaint.createSendButton = this.createSendToMiniPaintButton
+		isForge = window.parent.gradio_config.version >= "4.0.0"
 	}
 
-	
+
 
 	dataURLtoFile(dataurl, filename) {
 		var arr = dataurl.split(','),
@@ -47,13 +49,22 @@ class File_send_class {
 		return new File([u8arr], filename, { type: mime });
 	}
 	updateGradioImage(element, dt) {
-		let clearButton = element.querySelector("button[aria-label='Clear']");
+		let clearButton;
+		if (isForge) {
+			clearButton = element.querySelector('button.forge-btn[title="Remove"]');
+		} else {
+			clearButton = element.querySelector("button[aria-label='Remove Image']");
+		}
 
 		if (clearButton) {
 			clearButton.click();
 		}
-
-		const input = element.querySelector("input[type='file']");
+		let input;
+		if (isForge) {
+			input = element.querySelector("input.forge-file-upload[type='file']");
+		} else {
+			input = element.querySelector("input[type='file']");
+		}
 		input.value = ''
 		input.files = dt.files
 		input.dispatchEvent(
@@ -80,11 +91,17 @@ class File_send_class {
 			window.parent.switch_to_inpaint();
 		}
 
-		let container = window.parent.gradioApp().querySelector(selector);
-
-		const imageElems = container.querySelectorAll('div[data-testid="image"]')
-
-		this.updateGradioImage(imageElems[0], dt);
+		let container;
+		let imageElems;
+		if (isForge) {
+			container = window.parent.gradioApp().querySelector("#" + type + "_tab");
+			imageElems = container.querySelectorAll('div.forge-container')[0];
+			this.updateGradioImage(imageElems, dt);
+		} else {
+			container = window.parent.gradioApp().querySelector(selector);
+			imageElems = container.querySelectorAll('div[data-testid="image"]');
+			this.updateGradioImage(imageElems[0], dt);
+		};
 	}
 
 	async sendImageCanvasEditorControlNet(type, index) {
@@ -124,42 +141,54 @@ class File_send_class {
 				return
 			}
 		}
+		let imageElems = element.querySelectorAll('div[data-testid="image"]')
+		if (isForge) {
+			if (!imageElems[Number(index)]) {
+				let accordion = element.querySelector('.icon');
+				if (accordion) {
+					accordion.click();
+				}
+			}
+			imageElems = Array.from(window.parent.gradioApp().querySelector(selector).querySelector("#controlnet").querySelectorAll('[id]')).filter(el =>
+				el.id.match(new RegExp(String.raw`^${type}_controlnet_ControlNet-\d+_input_image$`, "g")))[index];
+			this.updateGradioImage(imageElems, dt);
+		}
+		else {
+			let _this = this
+			if (!imageElems[Number(index)]) {
+				let accordion = element.querySelector('.icon');
 
-		const imageElems = element.querySelectorAll('div[data-testid="image"]')
-		let _this = this
-		if (!imageElems[Number(index)]) {
-			let accordion = element.querySelector('.icon');
+				if (accordion) {
+					accordion.click();
 
-			if (accordion) {
-				accordion.click();
+					let controlNetAppeared = false;
 
-				let controlNetAppeared = false;
+					let observer = new MutationObserver(function (mutations) {
+						mutations.forEach(function (mutation) {
+							if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+								for (let i = 0; i < mutation.addedNodes.length; i++) {
+									if (mutation.addedNodes[i].tagName === "INPUT") {
 
-				let observer = new MutationObserver(function (mutations) {
-					mutations.forEach(function (mutation) {
-						if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-							for (let i = 0; i < mutation.addedNodes.length; i++) {
-								if (mutation.addedNodes[i].tagName === "INPUT") {
+										controlNetAppeared = true;
 
-									controlNetAppeared = true;
+										const imageElems2 = element.querySelectorAll('div[data-testid="image"]');
 
-									const imageElems2 = element.querySelectorAll('div[data-testid="image"]');
+										_this.updateGradioImage(imageElems2[Number(index)], dt);
 
-									_this.updateGradioImage(imageElems2[Number(index)], dt);
+										observer.disconnect();
 
-									observer.disconnect();
-
-									return;
+										return;
+									}
 								}
 							}
-						}
+						});
 					});
-				});
 
-				observer.observe(element, { childList: true, subtree: true });
+					observer.observe(element, { childList: true, subtree: true });
+				}
+			} else {
+				this.updateGradioImage(imageElems[Number(index * 4)], dt);
 			}
-		} else {
-			this.updateGradioImage(imageElems[Number(index*2)], dt);
 		}
 
 	};
@@ -201,28 +230,40 @@ class File_send_class {
 		this.POP.show(settings);
 	}
 
-	async GUISendExtras(){
+	async GUISendExtras() {
 		const imageDataURL = await this.Saver.export_data_url();
 		var file = this.dataURLtoFile(imageDataURL, 'image.png');
 		const dt = new DataTransfer();
 		dt.items.add(file);
 		let container = window.parent.gradioApp().querySelector("#extras_image");
-		const imageElems = container.querySelectorAll('div[data-testid="image"]')
-		this.updateGradioImage(imageElems[0], dt);
-		window.parent.switch_to_extras()
+		let imageElems;
+		if (isForge) {
+			imageElems = container.querySelectorAll('div.forge-container')[0];
+			window.parent.switch_to_extras()
+			this.updateGradioImage(imageElems, dt);
+		} else {
+			imageElems = container.querySelectorAll('div[data-testid="image"]')
+			window.parent.switch_to_extras()
+			this.updateGradioImage(imageElems[0], dt);
+		}
 	}
 
 	createSendToMiniPaintButton(queryId, gallery) {
 		var existingButton = window.parent.gradioApp().querySelector(`#${queryId} button`);
 		const FSC = new File_send_class();
-		const addButton = () => {FSC.recieveImage(gallery)}
-		if (window.parent.gradioApp().querySelector(`#${queryId}_open_in_minipaint`) == null){
+		const addButton = () => { FSC.recieveImage(gallery) }
+		if (window.parent.gradioApp().querySelector(`#${queryId}_open_in_minipaint`) == null) {
 			const newButton = existingButton.cloneNode(true);
 			newButton.id = `${queryId}_open_in_minipaint`;
 			newButton.textContent = "✏️";
-			newButton.title= "Send image to miniPaint tab.";
+			newButton.title = "Send image to miniPaint tab.";
 			newButton.addEventListener("click", addButton);
-			window.parent.gradioApp().querySelector(`#${queryId} .form`).appendChild(newButton);
+			if (isForge) {
+				window.parent.gradioApp().querySelector(`#${queryId}`).appendChild(newButton);
+			}
+			else {
+				window.parent.gradioApp().querySelector(`#${queryId} .form`).appendChild(newButton);
+			}
 		}
 		else {
 			existingButton = window.parent.gradioApp().querySelector(`#${queryId}_open_in_minipaint`);
