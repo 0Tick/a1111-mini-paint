@@ -10,9 +10,12 @@ has, so a missing argument costs a feature instead of the tab.
 from __future__ import annotations
 
 import inspect
+import re
 import typing
 
 import gradio as gr
+
+_UNEXPECTED = re.compile(r"unexpected keyword argument '([^']+)'")
 
 
 def _parameters(target) -> typing.Optional[typing.Mapping[str, typing.Any]]:
@@ -39,8 +42,25 @@ def dropped(target, kwargs: dict) -> list:
 
 
 def build(component, **kwargs):
-    """Instantiate a component with whatever of ``kwargs`` it understands."""
-    return component(**supported(component.__init__, kwargs))
+    """Instantiate a component with whatever of ``kwargs`` it understands.
+
+    Reading the signature is the first line of defence and usually the only
+    one needed. It is not enough on its own: the WebUI patches Gradio's
+    component constructors, and a wrapper that takes ``**kwargs`` reports
+    every argument as acceptable right up until the real constructor refuses
+    it. So an argument the host turns out not to have is dropped on the way
+    back out too, by name, rather than costing the whole tab.
+    """
+    attempt = supported(component.__init__, kwargs)
+    while True:
+        try:
+            return component(**attempt)
+        except TypeError as error:
+            match = _UNEXPECTED.search(str(error))
+            name = match.group(1) if match else None
+            if name is None or name not in attempt:
+                raise
+            attempt.pop(name)
 
 
 def has(name: str) -> bool:

@@ -1292,7 +1292,7 @@ window.forgeTouchCanvas = window.forgeTouchCanvas || {};
         }
     }
 
-    function selectTool(name) {
+    function syncToolButtons(name) {
         const rootElement = q(ROOT);
         if (!rootElement) {
             return;
@@ -1304,6 +1304,10 @@ window.forgeTouchCanvas = window.forgeTouchCanvas || {};
             [q("#forge_touch_tool_crop"), q("#forge_touch_tool_mask"), q("#forge_touch_tool_expand")],
             q(`#forge_touch_tool_${name}`)
         );
+    }
+
+    function selectTool(name) {
+        syncToolButtons(name);
 
         if (name === "crop") {
             activateEditorTool("crop");
@@ -1485,41 +1489,46 @@ window.forgeTouchCanvas = window.forgeTouchCanvas || {};
     function start() {
         const rootElement = q(ROOT);
         if (started || !rootElement) {
-            return;
+            return false;
         }
         started = true;
-        // Tells the stylesheet that one panel at a time is now being managed.
-        // Until this lands every panel is visible, so a tab whose JavaScript
-        // never arrived is dense rather than unusable.
-        rootElement.classList.add("forge-touch-js");
-        info("touch Canvas mounted; adapter active");
-        bindLocalControls();
-        selectTool(currentTool());
-        addReceiveButtons();
-        setInterval(pollPayload, POLL_MS);
+        try {
+            // Tells the stylesheet that one panel at a time is now being
+            // managed. Until this lands every panel is visible, so a tab whose
+            // JavaScript never arrived is dense rather than unusable.
+            rootElement.classList.add("forge-touch-js");
+            info("touch Canvas mounted; adapter active");
+            bindLocalControls();
+            // Buttons only: the editor's own toolbar is left alone until the
+            // user picks a mode, so nothing is clicked while the page is
+            // still coming up.
+            syncToolButtons(currentTool());
+            addReceiveButtons();
+            setInterval(pollPayload, POLL_MS);
+        } catch (error) {
+            // This runs from a MutationObserver among other places. Whatever
+            // is wrong here, the WebUI around it must keep working.
+            console.error(`${PREFIX} the adapter failed to start`, error);
+        }
+        return true;
     }
 
     // The tab is built with the rest of the UI, but this file can be evaluated
     // before it exists - and when the legacy editor is the mounted frontend it
     // never will, in which case nothing below ever runs.
     function watchForRoot() {
-        start();
-        if (started) {
+        if (start()) {
             return;
         }
-        const observer = new MutationObserver(() => {
-            start();
-            if (started) {
-                observer.disconnect();
-            }
-        });
-        observer.observe(document, { childList: true, subtree: true });
-        // A shadow-root host (Gradio's gradio-app) is not covered by the
-        // observer above until it exists, so re-check for a while as well.
+        // The tab is built with the rest of the UI, and a shadow-root host
+        // (Gradio's gradio-app) is not visible to an observer until it exists,
+        // so this polls instead of watching every mutation in the document.
+        // It gives up after a minute: when the legacy editor is the mounted
+        // frontend the root never appears, and nothing should be left running
+        // on the WebUI's behalf.
         let attempts = 0;
         const timer = setInterval(() => {
-            start();
-            if (started || ++attempts > 120) {
+            if (start() || ++attempts > 120) {
                 clearInterval(timer);
             }
         }, 500);

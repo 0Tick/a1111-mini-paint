@@ -26,8 +26,14 @@ survives a restart, and exactly one editor is ever built - there is no hidden
 second canvas in the page, and no listeners from the other one.
 
 If the new Canvas fails to build for any reason, the tab falls back to the
-legacy editor by itself and says so on screen; the traceback goes to the
-console.
+legacy editor by itself and puts the reason on screen; the full traceback goes
+to the WebUI console. The failure is contained: Gradio abandons its build
+context when a tab throws, so the fallback restores it before building - a
+broken Canvas must never take the rest of the WebUI's tabs with it.
+
+If you ever need the old editor before the UI is usable enough to reach
+Settings, start the WebUI with `MINIPAINT_OLD_UI=1` in the environment. It
+overrides the setting for that run.
 
 ## The Canvas
 
@@ -167,7 +173,7 @@ The legacy editor keeps its own on-screen report with a **Copy all** button
 
 | option | |
 | --- | --- |
-| Use Old UI (legacy miniPaint) | Which editor the tab builds. Needs a Reload UI. |
+| Use Old UI (legacy miniPaint) | Which editor the tab builds. Needs a Reload UI. `MINIPAINT_OLD_UI=1` in the environment overrides it. |
 | Canvas height | How much of the window the image takes. |
 | Tool selected when the Canvas opens | Crop, Mask or Expand. |
 | Mask overlay colour | Display only - the mask is sent as coverage, never as a colour. |
@@ -208,8 +214,9 @@ Known limits, and why:
 python tests/run.py
 ```
 
-214 checks over the crop/mask/expand maths, the handoff staging, and both
-frontends building. See `tests/README.md`.
+232 checks over the crop/mask/expand maths, the handoff staging, and both
+frontends building - including that a tab which fails to build leaves the rest
+of the WebUI wired up. See `tests/README.md`.
 
 Layout:
 

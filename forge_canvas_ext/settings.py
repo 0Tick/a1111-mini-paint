@@ -7,6 +7,7 @@ survives a restart and can be changed from a phone that has no dev tools.
 from __future__ import annotations
 
 import inspect
+import os
 import typing
 
 import gradio as gr
@@ -37,8 +38,40 @@ def get(key: str, default: typing.Any) -> typing.Any:
     return default if value is None else value
 
 
+# The setting is the way to switch editors - but it lives in a UI, and the
+# one time it is needed most is when a UI is not co-operating. This is the
+# lever that does not need one: MINIPAINT_OLD_UI=1 in the environment.
+OLD_UI_ENV = "MINIPAINT_OLD_UI"
+_TRUE = {"1", "true", "yes", "on"}
+_FALSE = {"0", "false", "no", "off"}
+
+
 def use_old_ui() -> bool:
+    override = os.environ.get(OLD_UI_ENV, "").strip().lower()
+    if override in _TRUE:
+        return True
+    if override in _FALSE:
+        return False
     return bool(get(USE_OLD_UI, False))
+
+
+def _category(name: str):
+    """Only claim a settings category the host actually has.
+
+    An option filed under a category the WebUI does not know about is not
+    ignored - the Settings page looks the category up while it is being built,
+    and an unknown one takes the page with it. ``None`` is the supported way
+    to say "no category", so that is what an unknown name becomes.
+    """
+    try:
+        from modules import shared_options
+
+        mapping = getattr(getattr(shared_options, "categories", None), "mapping", None)
+        if mapping is None:
+            return None
+        return name if name in mapping else None
+    except Exception:
+        return None
 
 
 def _option_info(default, label, *component, **kwargs):
@@ -59,11 +92,21 @@ def _option_info(default, label, *component, **kwargs):
 
 
 def _add(key, option, info: str = "", reload_ui: bool = False) -> None:
-    if info and hasattr(option, "info"):
-        option = option.info(info)
-    if reload_ui and hasattr(option, "needs_reload_ui"):
-        option = option.needs_reload_ui()
-    shared.opts.add_option(key, option)
+    """Register one option, and never let it be the reason Settings breaks.
+
+    These are conveniences; the one that matters, the frontend switch, is the
+    first one registered. Losing a later one to a host that does not accept it
+    is a missing checkbox, and taking the Settings page down with it would
+    also take down the way back to the legacy editor.
+    """
+    try:
+        if info and hasattr(option, "info"):
+            option = option.info(info)
+        if reload_ui and hasattr(option, "needs_reload_ui"):
+            option = option.needs_reload_ui()
+        shared.opts.add_option(key, option)
+    except Exception as error:  # pragma: no cover - depends on the host
+        print(f"MiniPaint: could not register the {key} setting ({error})")
 
 
 def on_ui_settings() -> None:
@@ -73,7 +116,7 @@ def on_ui_settings() -> None:
             False,
             "Use Old UI (legacy miniPaint)",
             section=SECTION,
-            category_id="ui",
+            category_id=_category("ui"),
         ),
         "Use the original miniPaint editor instead of the touch-first Canvas "
         "redesign. The legacy editor remains fully installed as a fallback.",
@@ -88,7 +131,7 @@ def on_ui_settings() -> None:
             gr.Slider,
             {"minimum": 40, "maximum": 95, "step": 5},
             section=SECTION,
-            category_id="ui",
+            category_id=_category("ui"),
         ),
         "How much of the window the image takes up in the new Canvas UI.",
         reload_ui=True,
@@ -102,7 +145,7 @@ def on_ui_settings() -> None:
             gr.Radio,
             {"choices": TOOLS},
             section=SECTION,
-            category_id="ui",
+            category_id=_category("ui"),
         ),
         reload_ui=True,
     )
@@ -114,7 +157,7 @@ def on_ui_settings() -> None:
             "Mask overlay colour",
             gr.ColorPicker,
             section=SECTION,
-            category_id="ui",
+            category_id=_category("ui"),
         ),
         "Display only. The mask itself is sent as coverage, never as this colour.",
         reload_ui=True,
